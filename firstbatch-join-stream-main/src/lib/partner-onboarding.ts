@@ -1,40 +1,83 @@
 export type PartnerTypeId =
   | "food-technologist"
-  | "consultant"
+  | "food-consultant"
   | "contract-manufacturer"
   | "ingredient-supplier"
   | "lab"
   | "packaging"
   | "other";
 
-export const PARTNER_TYPES: { id: PartnerTypeId; label: string; hint: string }[] = [
+export const PARTNER_TYPES: {
+  id: PartnerTypeId;
+  label: string;
+  hint: string;
+}[] = [
   {
     id: "food-technologist",
     label: "Food Technologist / R&D / NPD",
     hint: "Formulation & product development",
   },
-  { id: "consultant", label: "Food Consultant", hint: "Advisory & strategy" },
-  { id: "contract-manufacturer", label: "Contract Manufacturer", hint: "Lines & capacity" },
-  { id: "ingredient-supplier", label: "Ingredient Supplier", hint: "Raw materials" },
-  { id: "lab", label: "Testing / Research Lab", hint: "Analysis & compliance" },
-  { id: "packaging", label: "Packaging Partner", hint: "Materials & printing" },
-  { id: "other", label: "Other", hint: "Tell us more" },
+  {
+    id: "food-consultant",
+    label: "Food Consultant",
+    hint: "Advisory & food business support",
+  },
+  {
+    id: "contract-manufacturer",
+    label: "Contract Manufacturer",
+    hint: "Manufacturing & production",
+  },
+  {
+    id: "ingredient-supplier",
+    label: "Ingredient Supplier",
+    hint: "Ingredients & raw materials",
+  },
+  {
+    id: "lab",
+    label: "Testing / Research Lab",
+    hint: "Testing & research",
+  },
+  {
+    id: "packaging",
+    label: "Packaging Partner",
+    hint: "Packaging solutions",
+  },
+  {
+    id: "other",
+    label: "Other",
+    hint: "Tell us more",
+  },
 ];
 
-export const EXPERT_TRACK: PartnerTypeId[] = ["food-technologist"];
+/* -------------------------------------------------------
+TRACKS
+------------------------------------------------------- */
 
-export type Track = "expert" | "consultant" | "manufacturer" | "supplier" | "lab" | "packaging" | "other";
+export type Track =
+  | "expert"
+  | "consultant"
+  | "manufacturer"
+  | "supplier"
+  | "lab"
+  | "packaging"
+  | "other";
 
 export function trackFor(type: PartnerTypeId | ""): Track {
   if (!type) return "other";
-  if (EXPERT_TRACK.includes(type)) return "expert";
-  if (type === "consultant") return "consultant";
+
+  if (type === "food-technologist") return "expert";
+  if (type === "food-consultant") return "consultant";
   if (type === "contract-manufacturer") return "manufacturer";
   if (type === "ingredient-supplier") return "supplier";
   if (type === "lab") return "lab";
   if (type === "packaging") return "packaging";
+
   return "other";
 }
+
+/* -------------------------------------------------------
+SHARED CONTACT
+------------------------------------------------------- */
 
 export const COUNTRY_CODES = [
   { code: "+91", label: "IN +91" },
@@ -46,13 +89,16 @@ export const COUNTRY_CODES = [
   { code: "+49", label: "DE +49" },
 ];
 
+/* -------------------------------------------------------
+INDIAN STATES
+------------------------------------------------------- */
+
 export const INDIAN_STATES = [
   "Andhra Pradesh",
+  "Arunachal Pradesh",
   "Assam",
   "Bihar",
-  "Chandigarh",
   "Chhattisgarh",
-  "Delhi",
   "Goa",
   "Gujarat",
   "Haryana",
@@ -62,84 +108,152 @@ export const INDIAN_STATES = [
   "Kerala",
   "Madhya Pradesh",
   "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
   "Odisha",
   "Punjab",
   "Rajasthan",
+  "Sikkim",
   "Tamil Nadu",
   "Telangana",
+  "Tripura",
   "Uttar Pradesh",
   "Uttarakhand",
   "West Bengal",
-  "Outside India",
 ];
 
-export const EXPERTISE = [
+/* -------------------------------------------------------
+PARTNER 1
+FOOD TECHNOLOGIST / R&D / NPD
+------------------------------------------------------- */
+
+export const FOOD_TECH_EXPERTISE = [
   "Product Formulation",
-  "New Product Development",
-  "Recipe Development",
   "Ingredient Selection",
   "Sensory Evaluation",
   "Shelf-Life Improvement",
   "Process Optimization",
-  "Scale-Up",
+  "Scale-Up & Commercialization",
   "Cost Optimization",
   "Regulatory / FSSAI",
-  "Quality",
-  "Packaging Development",
+  "Quality Assurance & Food Safety",
+  "Contract Manufacturer identification",
+  "Raw Material/packaging vendor identification",
 ];
 
-export const FOOD_CATEGORIES = [
-  "Nutrition Bars",
-  "Protein Bars",
-  "Fiber Bars",
-  "Energy Bars",
-  "Chocolate",
-  "Bakery",
+export const FOOD_TECH_FOOD_CATEGORIES = [
+  "Beverages (incl. alcoholic)",
+  "Dairy & alternatives",
+  "Bakery & cereals",
+  "Confectionery",
   "Snacks",
-  "Beverages",
-  "Dairy",
-  "Plant-Based Foods",
-  "Functional Foods",
-  "Nutraceutical Foods",
+  "Meat, poultry & seafood",
+  "Plant-based & alternative proteins",
+  "Ready meals & chilled prepared",
+  "Sauces, soups & condiments",
+  "Frozen",
+  "Ambient & canned",
+  "Functional/ Nutraceuticals/Supplements",
+  "Infant & specialist nutrition",
+  "Ingredients & flavours",
+];
+
+export const AVAILABILITY_OPTIONS = [
+  "Working full time, open to freelance/part time project",
+  "Working as an independent consultant/freelancer",
+  "Both",
+];
+
+export const EXPERIENCE_LEVELS = [
+  "0–2",
+  "3–5",
+  "6–10",
+  "11–15",
+  "15+",
+];
+
+export const SCALE_UP_EXPERIENCE = [
+  "Lab formulation only",
+  "Pilot scale",
+  "Commercial production",
+];
+
+/* -------------------------------------------------------
+PARTNER 2
+FOOD CONSULTANT
+------------------------------------------------------- */
+
+export const FOOD_CONSULTANT_EXPERTISE = [
+  "Category & Market Assessment",
+  "Consumer & Channel Research",
+  "Product Strategy, Development & Portfolio Planning",
+  "Ingredient/Packaging Supplier & Manufacturing Partner Selection",
+  "Cost & Margin Optimization",
+  "Process, Operations & Scale-Up",
+  "Quality & Food Safety Advisory",
+  "Regulatory, Licensing & Compliance (incl. FSSAI)",
+  "Brand Strategy, Architecture & Identity",
+  "Agency Selection & Management",
+  "Go-to-Market Strategy & Execution",
+  "Marketing Strategy & Budget Planning",
+  "Organisation Design & Leadership Hiring",
   "Other",
 ];
 
-export const MANUFACTURING_PRODUCTS = [
-  "Fiber Bars",
-  "Protein Bars",
-  "Energy Bars",
-  "Nutrition Bars",
-  "Granola Bars",
-  "Date Bars",
-  "Nut Bars",
-  "Chocolate Bars",
-  "Chocolate-Coated Bars",
-  "Functional Foods",
-  "Other",
+/* -------------------------------------------------------
+PARTNER 3
+CONTRACT MANUFACTURER
+------------------------------------------------------- */
+
+export const MANUFACTURER_SERVICES = [
+  "OEM / Contract Manufacturing",
+  "Private Label",
+  "White Label",
+  "Co-Packing / Co-Manufacturing",
+  "R&D / Formulation Support",
 ];
 
-export const CERTIFICATIONS = ["FSSAI", "ISO", "HACCP", "GMP", "BRC", "Organic", "Other"];
-
-export const MOQ_UNITS = ["Bars", "Pieces", "Packs", "Boxes", "Kg", "Units", "Other"];
-
-export const WORK_TYPES = ["Freelance", "Firm", "In-house"];
-
-export const MANUFACTURER_CATEGORIES = [
-  "Fiber Bars",
-  "Protein Bars",
-  "Energy Bars",
-  "Nutrition Bars",
-  "Granola Bars",
-  "Date Bars",
-  "Nut Bars",
-  "Chocolate Bars",
-  "Chocolate-Coated Bars",
-  "Functional Foods",
-  "Healthy Snacks",
-  "Bakery",
-  "Beverages",
-  "Other Food Products",
+export const MANUFACTURER_CERTIFICATIONS = [
+  "FSSAI Central License",
+  "GMP",
+  "HACCP",
+  "ISO 22000",
 ];
+
+/* -------------------------------------------------------
+PARTNER 4
+INGREDIENT SUPPLIER
+------------------------------------------------------- */
+
+export const SUPPLIER_REGIONS = [
+  "North India",
+  "South India",
+  "East India",
+  "West India",
+  "Central India",
+  "Pan India",
+  "Export",
+];
+
+export const INGREDIENT_CERTIFICATIONS = [
+  "ISO 9001",
+  "ISO 22000",
+  "ISO 14001",
+  "FSSAI",
+  "FSSC",
+  "BRCGS",
+  "IFS",
+  "Organic",
+  "Halal",
+  "Kosher",
+];
+
+/* -------------------------------------------------------
+PARTNER 5
+TESTING / RESEARCH LAB
+------------------------------------------------------- */
 
 export const TESTING_SERVICES = [
   "Shelf-Life Testing",
@@ -149,68 +263,92 @@ export const TESTING_SERVICES = [
   "Sensory Testing",
   "Stability Testing",
   "Allergen Testing",
-  "Other",
 ];
 
-export const ENGAGEMENT_TYPES = [
-  "Freelance",
-  "Part-time",
-  "Project-based",
-  "Consulting",
-  "Open to long-term collaboration",
+export const LAB_ACCREDITATIONS = [
+  "NABL",
+  "FSSAI Notified",
+  "ISO 17025",
+  "GLP",
 ];
 
-export const PACKAGING_SUPPORT = [
-  "Primary packaging",
-  "Secondary packaging",
-  "Custom packaging",
-  "No packaging support",
-];
-
-export const INGREDIENT_CATEGORIES = [
-  "Proteins",
-  "Fibers & Prebiotics",
-  "Sweeteners",
-  "Cocoa & Chocolate",
-  "Nuts & Seeds",
-  "Dried Fruits",
-  "Flavours",
-  "Vitamins & Minerals",
-  "Functional Actives",
-  "Other",
-];
-
-export const TESTING_CAPABILITIES = [
-  "Nutritional analysis",
-  "Microbiological",
-  "Shelf-life / accelerated",
-  "Heavy metals",
-  "Pesticide residue",
-  "Allergen",
-  "Sensory",
-  "Label / FSSAI compliance",
-];
+/* -------------------------------------------------------
+PARTNER 6
+PACKAGING PARTNER
+------------------------------------------------------- */
 
 export const PACKAGING_TYPES = [
-  "Flow wrap",
+  "Flow Wrap",
   "Pouches",
   "Cartons",
   "Sleeves",
   "Jars",
   "Bottles",
-  "Shrink / secondary",
-  "Other",
+  "Shrink / Secondary",
 ];
 
 export const PACKAGING_MATERIALS = [
   "Laminates",
   "Paper / Kraft",
   "Compostable",
-  "Recyclable mono-material",
-  "Aluminium foil",
+  "Recyclable Mono-material",
+  "Aluminium Foil",
   "Glass",
   "PET",
 ];
+
+/* -------------------------------------------------------
+MOQ
+Used for:
+- Contract Manufacturer
+- Ingredient Supplier
+- Packaging Partner
+
+No separate MOQ Type field.
+------------------------------------------------------- */
+
+export const MOQ_UNITS = [
+  "Kg",
+  "Custom",
+];
+
+export const MOQ_CUSTOM_OPTIONS = [
+  "Fixed",
+  "Flexible",
+  "Case by case",
+];
+
+/* -------------------------------------------------------
+BACKWARD-COMPATIBILITY EXPORTS
+These are kept temporarily so existing files don't break
+while we update the form.
+------------------------------------------------------- */
+
+export const FOOD_CATEGORIES = FOOD_TECH_FOOD_CATEGORIES;
+
+export const EXPERTISE = FOOD_TECH_EXPERTISE;
+
+export const ENGAGEMENT_TYPES = AVAILABILITY_OPTIONS;
+
+export const PACKAGING_SUPPORT = [];
+
+export const MANUFACTURER_CATEGORIES: string[] = [];
+
+export const MANUFACTURING_PRODUCTS: string[] = [];
+
+export const INGREDIENT_CATEGORIES: string[] = [];
+
+export const LAB_FOOD_CATEGORIES: string[] = [];
+
+export const PACKAGING_FOOD_CATEGORIES: string[] = [];
+
+export const PACKAGING_CERTIFICATIONS: string[] = [];
+
+export const CERTIFICATIONS = MANUFACTURER_CERTIFICATIONS;
+
+/* -------------------------------------------------------
+TYPES
+------------------------------------------------------- */
 
 export type BasicDetails = {
   partnerType: PartnerTypeId | "";
@@ -234,7 +372,10 @@ export type PartnerRecord = {
   basicFormCompleted: boolean;
   detailedFormStarted: boolean;
   detailedFormCompleted: boolean;
-  status: "Partner Details Completed" | "Profile In Progress" | "Profile Completed";
+  status:
+    | "Partner Details Completed"
+    | "Profile In Progress"
+    | "Profile Completed";
   createdAt: string;
   updatedAt: string;
 };
@@ -254,37 +395,58 @@ export const EMPTY_BASICS: BasicDetails = {
   joinCommunity: true,
 };
 
+/* -------------------------------------------------------
+LOCAL STORAGE
+------------------------------------------------------- */
+
 const STORAGE_KEY = "fb_partner_record";
 
 export function makePartnerId() {
   const n = Math.floor(1000 + Math.random() * 9000);
+
   return `FB-P-${new Date().getFullYear()}-${n}`;
 }
 
 export function loadRecord(): PartnerRecord | null {
   if (typeof window === "undefined") return null;
+
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as PartnerRecord) : null;
+    const raw =
+      window.localStorage.getItem(
+        STORAGE_KEY,
+      );
+
+    return raw
+      ? (JSON.parse(raw) as PartnerRecord)
+      : null;
   } catch {
     return null;
   }
 }
 
-export function saveRecord(record: PartnerRecord) {
+export function saveRecord(
+  record: PartnerRecord,
+) {
   if (typeof window === "undefined") return;
+
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(record),
+    );
   } catch {
-    /* storage unavailable — prototype continues in memory */
+    // Local storage unavailable
   }
 }
 
 export function clearRecord() {
   if (typeof window === "undefined") return;
+
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(
+      STORAGE_KEY,
+    );
   } catch {
-    /* noop */
+    // No action needed
   }
 }
