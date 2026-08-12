@@ -1,4 +1,10 @@
-import { useState, type ReactNode } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type ReactNode,
+  type KeyboardEvent,
+} from "react";
 
 export function Field({
   label,
@@ -16,7 +22,10 @@ export function Field({
   return (
     <div className="min-w-0">
       <label className="mb-2 block text-sm font-semibold text-foreground">
-        {label} {required && <span className="text-accent-warm">*</span>}
+        {label}{" "}
+        {required && (
+          <span className="text-accent-warm">*</span>
+        )}
       </label>
 
       {hint && (
@@ -64,11 +73,13 @@ export function Select({
   onChange,
   options,
   placeholder,
+  hidePlaceholderOption = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
   placeholder?: string;
+  hidePlaceholderOption?: boolean;
 }) {
   return (
     <div className="relative">
@@ -77,12 +88,21 @@ export function Select({
         onChange={(e) => onChange(e.target.value)}
         className="field-base appearance-none pr-10"
       >
-        <option value="">
-          {placeholder ?? "Select one"}
-        </option>
+        {!hidePlaceholderOption && (
+          <option
+            value=""
+            disabled
+            hidden
+          >
+            {placeholder ?? "Select one"}
+          </option>
+        )}
 
         {options.map((o) => (
-          <option key={o} value={o}>
+          <option
+            key={o}
+            value={o}
+          >
             {o}
           </option>
         ))}
@@ -172,7 +192,9 @@ export function OptionCards({
   return (
     <div
       className={`grid grid-cols-1 gap-2.5 sm:grid-cols-2 ${
-        columns === 3 ? "lg:grid-cols-3" : ""
+        columns === 3
+          ? "lg:grid-cols-3"
+          : ""
       }`}
     >
       {options.map((o) => {
@@ -233,7 +255,9 @@ export function YesNo({
     <ChipGroup
       options={options}
       value={value ? [value] : []}
-      onChange={(v) => onChange(v[0] ?? "")}
+      onChange={(v) =>
+        onChange(v[0] ?? "")
+      }
       multi={false}
     />
   );
@@ -264,170 +288,435 @@ export function Checkbox({
   );
 }
 
+/* =========================================================
+   TAG INPUT
+   ========================================================= */
+
 export function TagInput({
   options,
   value,
   onChange,
   placeholder = "Search or type to add…",
   allowCustom = true,
+  specialOther = false,
+  customPlaceholder = "Add new option",
 }: {
   options: string[];
   value: string[];
   onChange: (v: string[]) => void;
   placeholder?: string;
   allowCustom?: boolean;
+  specialOther?: boolean;
+  customPlaceholder?: string;
 }) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [query, setQuery] =
+    useState("");
 
-  const add = (v: string) => {
-    const t = v.trim();
+  const [open, setOpen] =
+    useState(false);
 
-    if (!t) return;
+  const [customQuery, setCustomQuery] =
+    useState("");
 
+  /*
+   * Ref for the complete TagInput component.
+   *
+   * This includes:
+   * - selected capsules
+   * - main selector
+   * - dropdown
+   * - dropdown search
+   * - Other custom textbox
+   */
+  const tagInputRef =
+    useRef<HTMLDivElement>(null);
+
+  /*
+   * Close the dropdown whenever the
+   * user clicks outside this component.
+   */
+  useEffect(() => {
+    const handleOutsideClick = (
+      event: MouseEvent,
+    ) => {
+      if (
+        tagInputRef.current &&
+        !tagInputRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+    };
+  }, []);
+
+  const OTHER_OPTION = "Other";
+
+  const otherSelected =
+    specialOther &&
+    value.some(
+      (v) =>
+        v.trim().toLowerCase() ===
+        OTHER_OPTION.toLowerCase(),
+    );
+
+  /*
+   * "Other" is never shown as a capsule.
+   * All other selected values are capsules.
+   */
+  const selectedValues =
+    specialOther
+      ? value.filter(
+          (v) =>
+            v.trim().toLowerCase() !==
+            OTHER_OPTION.toLowerCase(),
+        )
+      : value;
+
+  /*
+   * Select an existing option.
+   */
+  const add = (
+    option: string,
+  ) => {
+    const text =
+      option.trim();
+
+    if (!text) {
+      return;
+    }
+
+    /*
+     * Select "Other".
+     */
     if (
-      !value.some(
-        (x) =>
-          x.toLowerCase() ===
-          t.toLowerCase(),
-      )
+      specialOther &&
+      text.toLowerCase() ===
+        OTHER_OPTION.toLowerCase()
     ) {
-      onChange([...value, t]);
+      const alreadySelected =
+        value.some(
+          (x) =>
+            x.trim().toLowerCase() ===
+            OTHER_OPTION.toLowerCase(),
+        );
+
+      if (!alreadySelected) {
+        onChange([
+          ...value,
+          OTHER_OPTION,
+        ]);
+      }
+
+      setQuery("");
+      setOpen(false);
+
+      return;
+    }
+
+    /*
+     * Selecting a normal option
+     * removes "Other" first.
+     */
+    const withoutOther =
+      specialOther
+        ? value.filter(
+            (x) =>
+              x.trim().toLowerCase() !==
+              OTHER_OPTION.toLowerCase(),
+          )
+        : value;
+
+    const alreadyExists =
+      withoutOther.some(
+        (x) =>
+          x.trim().toLowerCase() ===
+          text.toLowerCase(),
+      );
+
+    if (!alreadyExists) {
+      onChange([
+        ...withoutOther,
+        text,
+      ]);
+    } else {
+      onChange(
+        withoutOther,
+      );
     }
 
     setQuery("");
-    setOpen(true);
+    setOpen(false);
   };
 
-  const remove = (v: string) => {
+  /*
+   * Add user's custom value from
+   * the special "Other" textbox.
+   */
+  const addCustom = () => {
+    const text =
+      customQuery.trim();
+
+    if (!text) {
+      return;
+    }
+
+    /*
+     * Don't allow "Other" as a
+     * custom capsule.
+     */
+    if (
+      specialOther &&
+      text.toLowerCase() ===
+        OTHER_OPTION.toLowerCase()
+    ) {
+      setCustomQuery("");
+      return;
+    }
+
+    const alreadyExists =
+      value.some(
+        (x) =>
+          x.trim().toLowerCase() ===
+          text.toLowerCase(),
+      );
+
+    if (!alreadyExists) {
+      onChange([
+        ...value,
+        text,
+      ]);
+    }
+
+    setCustomQuery("");
+  };
+
+  /*
+   * Remove a capsule.
+   */
+  const remove = (
+    v: string,
+  ) => {
     onChange(
-      value.filter((x) => x !== v),
+      value.filter(
+        (x) => x !== v,
+      ),
     );
   };
 
+  /*
+   * Filter existing options.
+   */
   const normalizedQuery =
     query.trim().toLowerCase();
 
   const suggestions =
     options.filter(
-      (o) =>
-        o
+      (option) =>
+        option
           .toLowerCase()
-          .includes(normalizedQuery) &&
+          .includes(
+            normalizedQuery,
+          ) &&
         !value.some(
-          (x) =>
-            x.toLowerCase() ===
-            o.toLowerCase(),
+          (selected) =>
+            selected
+              .toLowerCase() ===
+            option.toLowerCase(),
         ),
     );
 
-  const canAddCustom =
-    allowCustom &&
-    query.trim().length > 0 &&
-    !options.some(
-      (o) =>
-        o.toLowerCase() ===
-        normalizedQuery,
-    ) &&
-    !value.some(
-      (x) =>
-        x.toLowerCase() ===
-        normalizedQuery,
-    );
+  /*
+   * allowCustom is kept in the API
+   * for compatibility with existing
+   * partner components.
+   */
+  void allowCustom;
 
   return (
-    <div className="w-full">
-      {value.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
-          {value.map((v) => (
-            <span
-              key={v}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1.5 text-sm text-primary-foreground"
-            >
-              {v}
+    /*
+     * IMPORTANT:
+     * tagInputRef must be on this OUTER
+     * container so clicks inside the
+     * dropdown/custom input do not
+     * trigger the outside-click handler.
+     */
+    <div
+      ref={tagInputRef}
+      className="w-full"
+    >
+      {/* =====================================================
+          SELECTED CAPSULES
+      ===================================================== */}
 
-              <button
-                type="button"
-                aria-label={`Remove ${v}`}
-                onClick={() =>
-                  remove(v)
-                }
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+      {selectedValues.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {selectedValues.map(
+            (v) => (
+              <span
+                key={v}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1.5 text-sm text-primary-foreground"
               >
-                ×
-              </button>
-            </span>
-          ))}
+                {v}
+
+                <button
+                  type="button"
+                  aria-label={`Remove ${v}`}
+                  onClick={() =>
+                    remove(v)
+                  }
+                  className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+                >
+                  ×
+                </button>
+              </span>
+            ),
+          )}
         </div>
       )}
 
-      <input
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() =>
-          setOpen(true)
-        }
-        onBlur={() =>
-          window.setTimeout(
-            () => setOpen(false),
-            150,
-          )
-        }
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
+      {/* =====================================================
+          MAIN SELECTOR
+      ===================================================== */}
 
-            if (query.trim()) {
-              add(query);
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() =>
+            setOpen(
+              (current) =>
+                !current,
+            )
+          }
+          className="field-base flex min-h-[3.5rem] w-full items-center justify-between text-left"
+        >
+          <span
+            className={
+              otherSelected
+                ? "text-foreground"
+                : "text-muted-foreground"
             }
-          }
+          >
+            {otherSelected
+              ? "Other"
+              : placeholder}
+          </span>
 
-          if (e.key === "Escape") {
-            setOpen(false);
-          }
-        }}
-        placeholder={placeholder}
-        className="field-base"
-      />
+          <svg
+            aria-hidden
+            viewBox="0 0 20 20"
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+              open
+                ? "rotate-180"
+                : ""
+            }`}
+          >
+            <path
+              d="M5 8l5 5 5-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
 
-      {open &&
-        (suggestions.length > 0 ||
-          canAddCustom) && (
-          <div className="mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-background p-1 shadow-[0_8px_24px_rgba(34,39,31,0.10)]">
-            {suggestions.map((o) => (
-              <button
-                key={o}
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  add(o);
-                }}
-                className="block w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-cream"
-              >
-                {o}
-              </button>
-            ))}
+        {/* =====================================================
+            DROPDOWN
+        ===================================================== */}
 
-            {canAddCustom && (
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  add(query);
-                }}
-                className="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-accent-warm transition-colors hover:bg-cream"
-              >
-                Add “{query.trim()}”
-              </button>
+        {open && (
+          <div className="absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-border bg-background p-2 shadow-[0_8px_24px_rgba(34,39,31,0.10)]">
+            {/* Dropdown search */}
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) =>
+                setQuery(
+                  e.target.value,
+                )
+              }
+              placeholder="Search your options..."
+              className="field-base mb-2"
+            />
+
+            {/* Existing options */}
+            {suggestions.length >
+            0 ? (
+              <div className="space-y-1">
+                {suggestions.map(
+                  (option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() =>
+                        add(option)
+                      }
+                      className="block w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-cream"
+                    >
+                      {option}
+                    </button>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                No matching options found.
+              </p>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* =====================================================
+          CUSTOM INPUT
+          ONLY appears when "Other" is selected.
+      ===================================================== */}
+
+      {specialOther &&
+        otherSelected && (
+          <div className="mt-2">
+            <input
+              value={customQuery}
+              onChange={(e) =>
+                setCustomQuery(
+                  e.target.value,
+                )
+              }
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter"
+                ) {
+                  e.preventDefault();
+                  addCustom();
+                }
+              }}
+              placeholder={
+                customPlaceholder
+              }
+              className="field-base"
+            />
           </div>
         )}
     </div>
   );
 }
+
+/* =========================================================
+   REPEATABLE TEXT INPUTS
+   ========================================================= */
 
 export function RepeatableTextInputs({
   value,
@@ -444,81 +733,180 @@ export function RepeatableTextInputs({
     value.length > 0
       ? value
       : Array.from(
-          { length: initialCount },
+          {
+            length:
+              initialCount,
+          },
           () => "",
         );
+
+  const inputRefs =
+    useRef<
+      HTMLInputElement[]
+    >([]);
 
   const update = (
     index: number,
     text: string,
   ) => {
-    const next = [...items];
+    const next = [
+      ...items,
+    ];
+
     next[index] = text;
+
     onChange(next);
   };
 
   const add = () => {
-    onChange([...items, ""]);
+    onChange([
+      ...items,
+      "",
+    ]);
   };
 
-  const remove = (index: number) => {
-    if (items.length === 1) {
+  const remove = (
+    index: number,
+  ) => {
+    if (
+      items.length === 1
+    ) {
       onChange([""]);
       return;
     }
 
     onChange(
       items.filter(
-        (_, i) => i !== index,
+        (_, i) =>
+          i !== index,
       ),
     );
   };
 
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
+    if (e.key !== "Enter") {
+      return;
+    }
+
+    e.preventDefault();
+
+    /*
+     * Don't create an empty textbox.
+     */
+    if (
+      !e.currentTarget.value.trim()
+    ) {
+      return;
+    }
+
+    const isLast =
+      index ===
+      items.length - 1;
+
+    if (isLast) {
+      add();
+
+      /*
+       * Focus the newly-created
+       * textbox.
+       */
+      requestAnimationFrame(
+        () => {
+          inputRefs.current[
+            index + 1
+          ]?.focus();
+        },
+      );
+
+      return;
+    }
+
+    /*
+     * If next textbox already exists,
+     * simply move the cursor there.
+     */
+    inputRefs.current[
+      index + 1
+    ]?.focus();
+  };
+
   return (
     <div className="space-y-2">
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className="flex items-center gap-2"
-        >
-          <input
-            value={item}
-            onChange={(e) =>
-              update(
-                index,
-                e.target.value,
-              )
-            }
-            placeholder={placeholder}
-            className="field-base min-w-0 flex-1"
-          />
-
-          {index ===
-            items.length - 1 && (
-            <button
-              type="button"
-              onClick={add}
-              aria-label="Add another"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-background text-lg font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+      {items.map(
+        (item, index) => {
+          return (
+            <div
+              key={index}
+              className="flex items-center gap-2"
             >
-              +
-            </button>
-          )}
+              <input
+                ref={(el) => {
+                  if (el) {
+                    inputRefs.current[
+                      index
+                    ] = el;
+                  }
+                }}
+                value={item}
+                onChange={(e) =>
+                  update(
+                    index,
+                    e.target.value,
+                  )
+                }
+                onKeyDown={(e) =>
+                  handleKeyDown(
+                    e,
+                    index,
+                  )
+                }
+                placeholder={
+                  placeholder
+                }
+                className="field-base min-w-0 flex-1"
+              />
 
-          {items.length > 1 && (
-            <button
-              type="button"
-              onClick={() =>
-                remove(index)
-              }
-              aria-label="Remove"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-background text-lg font-semibold text-muted-foreground transition-colors hover:border-accent-warm hover:text-accent-warm"
-            >
-              −
-            </button>
-          )}
-        </div>
-      ))}
+              {index ===
+                items.length - 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    add();
+
+                    requestAnimationFrame(
+                      () => {
+                        inputRefs.current[
+                          index + 1
+                        ]?.focus();
+                      },
+                    );
+                  }}
+                  aria-label="Add another"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-background text-lg font-semibold text-foreground transition-colors hover:border-primary hover:bg-cream"
+                >
+                  +
+                </button>
+              )}
+
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    remove(index)
+                  }
+                  aria-label="Remove"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-background text-lg font-semibold text-muted-foreground transition-colors hover:border-accent-warm hover:text-accent-warm"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        },
+      )}
     </div>
   );
 }

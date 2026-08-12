@@ -49,10 +49,6 @@ export const PARTNER_TYPES: {
   },
 ];
 
-/* -------------------------------------------------------
-TRACKS
-------------------------------------------------------- */
-
 export type Track =
   | "expert"
   | "consultant"
@@ -63,21 +59,14 @@ export type Track =
   | "other";
 
 export function trackFor(type: PartnerTypeId | ""): Track {
-  if (!type) return "other";
-
   if (type === "food-technologist") return "expert";
   if (type === "food-consultant") return "consultant";
   if (type === "contract-manufacturer") return "manufacturer";
   if (type === "ingredient-supplier") return "supplier";
   if (type === "lab") return "lab";
   if (type === "packaging") return "packaging";
-
   return "other";
 }
-
-/* -------------------------------------------------------
-SHARED CONTACT
-------------------------------------------------------- */
 
 export const COUNTRY_CODES = [
   { code: "+91", label: "IN +91" },
@@ -88,10 +77,6 @@ export const COUNTRY_CODES = [
   { code: "+61", label: "AU +61" },
   { code: "+49", label: "DE +49" },
 ];
-
-/* -------------------------------------------------------
-INDIAN STATES
-------------------------------------------------------- */
 
 export const INDIAN_STATES = [
   "Andhra Pradesh",
@@ -124,10 +109,20 @@ export const INDIAN_STATES = [
   "West Bengal",
 ];
 
-/* -------------------------------------------------------
-PARTNER 1
-FOOD TECHNOLOGIST / R&D / NPD
-------------------------------------------------------- */
+export const EXPERIENCE_LEVELS = [
+  "0–2 years",
+  "3–5 years",
+  "6–10 years",
+  "11–15 years",
+  "15+ years",
+];
+
+export const AVAILABILITY_OPTIONS = [
+  "Working full time, open to freelance/part time project",
+  "Working as an independent consultant/freelancer",
+];
+
+/* Partner 1 — Food Technologist / R&D / NPD */
 
 export const FOOD_TECH_EXPERTISE = [
   "Product Formulation",
@@ -141,6 +136,7 @@ export const FOOD_TECH_EXPERTISE = [
   "Quality Assurance & Food Safety",
   "Contract Manufacturer identification",
   "Raw Material/packaging vendor identification",
+  "Other",
 ];
 
 export const FOOD_TECH_FOOD_CATEGORIES = [
@@ -160,30 +156,13 @@ export const FOOD_TECH_FOOD_CATEGORIES = [
   "Ingredients & flavours",
 ];
 
-export const AVAILABILITY_OPTIONS = [
-  "Working full time, open to freelance/part time project",
-  "Working as an independent consultant/freelancer",
-  "Both",
-];
-
-export const EXPERIENCE_LEVELS = [
-  "0–2",
-  "3–5",
-  "6–10",
-  "11–15",
-  "15+",
-];
-
 export const SCALE_UP_EXPERIENCE = [
   "Lab formulation only",
   "Pilot scale",
   "Commercial production",
 ];
 
-/* -------------------------------------------------------
-PARTNER 2
-FOOD CONSULTANT
-------------------------------------------------------- */
+/* Partner 2 — Food Consultant */
 
 export const FOOD_CONSULTANT_EXPERTISE = [
   "Category & Market Assessment",
@@ -202,10 +181,7 @@ export const FOOD_CONSULTANT_EXPERTISE = [
   "Other",
 ];
 
-/* -------------------------------------------------------
-PARTNER 3
-CONTRACT MANUFACTURER
-------------------------------------------------------- */
+/* Partner 3 — Contract Manufacturer */
 
 export const MANUFACTURER_SERVICES = [
   "OEM / Contract Manufacturing",
@@ -222,20 +198,7 @@ export const MANUFACTURER_CERTIFICATIONS = [
   "ISO 22000",
 ];
 
-/* -------------------------------------------------------
-PARTNER 4
-INGREDIENT SUPPLIER
-------------------------------------------------------- */
-
-export const SUPPLIER_REGIONS = [
-  "North India",
-  "South India",
-  "East India",
-  "West India",
-  "Central India",
-  "Pan India",
-  "Export",
-];
+/* Partner 4 — Ingredient Supplier */
 
 export const INGREDIENT_CERTIFICATIONS = [
   "ISO 9001",
@@ -250,10 +213,17 @@ export const INGREDIENT_CERTIFICATIONS = [
   "Kosher",
 ];
 
-/* -------------------------------------------------------
-PARTNER 5
-TESTING / RESEARCH LAB
-------------------------------------------------------- */
+export const SUPPLIER_REGIONS = [
+  "North India",
+  "South India",
+  "East India",
+  "West India",
+  "Central India",
+  "Pan India",
+  "Export",
+];
+
+/* Partner 5 — Testing / Research Lab */
 
 export const TESTING_SERVICES = [
   "Shelf-Life Testing",
@@ -272,10 +242,7 @@ export const LAB_ACCREDITATIONS = [
   "GLP",
 ];
 
-/* -------------------------------------------------------
-PARTNER 6
-PACKAGING PARTNER
-------------------------------------------------------- */
+/* Partner 6 — Packaging Partner */
 
 export const PACKAGING_TYPES = [
   "Flow Wrap",
@@ -297,58 +264,13 @@ export const PACKAGING_MATERIALS = [
   "PET",
 ];
 
-/* -------------------------------------------------------
-MOQ
-Used for:
-- Contract Manufacturer
-- Ingredient Supplier
-- Packaging Partner
-
-No separate MOQ Type field.
-------------------------------------------------------- */
+/* MOQ — Partners 3, 4 and 6 */
 
 export const MOQ_UNITS = [
-  "Kg",
+  "Unit & Kg",
+  "Flexible + Case by Case",
   "Custom",
 ];
-
-export const MOQ_CUSTOM_OPTIONS = [
-  "Fixed",
-  "Flexible",
-  "Case by case",
-];
-
-/* -------------------------------------------------------
-BACKWARD-COMPATIBILITY EXPORTS
-These are kept temporarily so existing files don't break
-while we update the form.
-------------------------------------------------------- */
-
-export const FOOD_CATEGORIES = FOOD_TECH_FOOD_CATEGORIES;
-
-export const EXPERTISE = FOOD_TECH_EXPERTISE;
-
-export const ENGAGEMENT_TYPES = AVAILABILITY_OPTIONS;
-
-export const PACKAGING_SUPPORT = [];
-
-export const MANUFACTURER_CATEGORIES: string[] = [];
-
-export const MANUFACTURING_PRODUCTS: string[] = [];
-
-export const INGREDIENT_CATEGORIES: string[] = [];
-
-export const LAB_FOOD_CATEGORIES: string[] = [];
-
-export const PACKAGING_FOOD_CATEGORIES: string[] = [];
-
-export const PACKAGING_CERTIFICATIONS: string[] = [];
-
-export const CERTIFICATIONS = MANUFACTURER_CERTIFICATIONS;
-
-/* -------------------------------------------------------
-TYPES
-------------------------------------------------------- */
 
 export type BasicDetails = {
   partnerType: PartnerTypeId | "";
@@ -395,15 +317,10 @@ export const EMPTY_BASICS: BasicDetails = {
   joinCommunity: true,
 };
 
-/* -------------------------------------------------------
-LOCAL STORAGE
-------------------------------------------------------- */
-
 const STORAGE_KEY = "fb_partner_record";
 
 export function makePartnerId() {
   const n = Math.floor(1000 + Math.random() * 9000);
-
   return `FB-P-${new Date().getFullYear()}-${n}`;
 }
 
@@ -411,31 +328,20 @@ export function loadRecord(): PartnerRecord | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw =
-      window.localStorage.getItem(
-        STORAGE_KEY,
-      );
-
-    return raw
-      ? (JSON.parse(raw) as PartnerRecord)
-      : null;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as PartnerRecord) : null;
   } catch {
     return null;
   }
 }
 
-export function saveRecord(
-  record: PartnerRecord,
-) {
+export function saveRecord(record: PartnerRecord) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(record),
-    );
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
   } catch {
-    // Local storage unavailable
+    // Local storage unavailable.
   }
 }
 
@@ -443,10 +349,8 @@ export function clearRecord() {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.removeItem(
-      STORAGE_KEY,
-    );
+    window.localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // No action needed
+    // No action needed.
   }
 }

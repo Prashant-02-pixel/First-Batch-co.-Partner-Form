@@ -1,6 +1,12 @@
 import {
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
+
+import {
   Field,
-  TextInput,
+  TextInput,  
   TextArea,
   Select,
   OptionCards,
@@ -29,7 +35,6 @@ import {
   PACKAGING_TYPES,
   PACKAGING_MATERIALS,
   MOQ_UNITS,
-  MOQ_CUSTOM_OPTIONS,
   trackFor,
   type BasicDetails,
 } from "@/lib/partner-onboarding";
@@ -302,12 +307,12 @@ export function StepOne({
       ===================================================== */}
 
       <Field
-        label={
-          track === "expert" ||
-          track === "consultant"
-            ? "WhatsApp No."
-            : "Phone No."
-        }
+     label={
+  isIndividualPartner &&
+  data.entity === "independent"
+    ? "WhatsApp No."
+    : "Phone No."
+}
         required
         error={errorFor(
           errors,
@@ -355,16 +360,21 @@ export function StepOne({
           </div>
 
           <TextInput
-            value={data.phone}
-            inputMode="tel"
-            placeholder="Mobile number"
-            onChange={(e) =>
-              onChange({
-                phone:
-                  e.target.value,
-              })
-            }
-          />
+  type="tel"
+  inputMode="numeric"
+  value={data.phone}
+  placeholder="Mobile number"
+  maxLength={15}
+  onChange={(e) =>
+    onChange({
+      phone:
+        e.target.value.replace(
+          /\D/g,
+          "",
+        ),
+    })
+  }
+/>
         </div>
       </Field>
 
@@ -403,12 +413,10 @@ export function StepOne({
             ? "Your LinkedIn"
             : "LinkedIn"
         }
-        required={
-          track !== "manufacturer" &&
-          track !== "supplier" &&
-          track !== "lab" &&
-          track !== "packaging"
-        }
+     required={
+  isIndividualPartner &&
+  data.entity === "independent"
+}
         error={errorFor(
           errors,
           "linkedin",
@@ -456,11 +464,19 @@ export function StepOne({
   track === "consultant" ||
   track === "other") && (
   <Field
-    label="Portfolio / Website / CV"
+    label={
+  data.entity === "company"
+    ? "Website"
+    : "Portfolio / Website / CV"
+}
     required={
-      track === "expert" ||
-      track === "consultant"
-    }
+  data.entity === "independent" &&
+  (
+    track === "expert" ||
+    track === "consultant" ||
+    track === "other"
+  )
+}
     error={errorFor(errors, "driveLink")}
   >
     <TextInput
@@ -469,7 +485,7 @@ export function StepOne({
         qual,
         "driveLink",
       )}
-      placeholder="Drive link"
+      placeholder="https://"
       onChange={(e) =>
         setQ(
           "driveLink",
@@ -532,20 +548,22 @@ export function StepOne({
       ===================================================== */}
 
       {track === "expert" && (
-        <ExpertFields
-          qual={qual}
-          setQ={setQ}
-          errors={errors}
-        />
-      )}
+  <ExpertFields
+    qual={qual}
+    setQ={setQ}
+    errors={errors}
+    entity={data.entity}
+  />
+)}
 
-      {track === "consultant" && (
-        <ConsultantFields
-          qual={qual}
-          setQ={setQ}
-          errors={errors}
-        />
-      )}
+{track === "consultant" && (
+  <ConsultantFields
+    qual={qual}
+    setQ={setQ}
+    errors={errors}
+    entity={data.entity}
+  />
+)}
 
       {track === "manufacturer" && (
         <ManufacturerFields
@@ -578,14 +596,16 @@ export function StepOne({
           errors={errors}
         />
       )}
+      {data.partnerType &&
+      track === "other" && (
+      <OtherFields
+      qual={qual}
+      setQ={setQ}
+      errors={errors}
+      entity={data.entity}
 
-      {track === "other" && (
-        <OtherFields
-          qual={qual}
-          setQ={setQ}
-          errors={errors}
         />
-      )}
+     )}
     </div>
   );
 }
@@ -606,6 +626,88 @@ function AvailabilityField({
   ) => void;
   errors: Errors;
 }) {
+  const availability = str(
+    qual,
+    "availability",
+  );
+
+  const [customAvailability, setCustomAvailability] =
+    useState(
+      availability &&
+        !AVAILABILITY_OPTIONS.includes(
+          availability,
+        ) &&
+        availability !== "Other"
+        ? availability
+        : "",
+    );
+
+  const isOther =
+    availability === "Other";
+
+  const isCustomAvailability =
+    availability !== "" &&
+    availability !== "Other" &&
+    !AVAILABILITY_OPTIONS.includes(
+      availability,
+    );
+const showCustomInput = isOther;
+
+  const handleSelectChange = (
+    value: string,
+  ) => {
+    if (value === "Other") {
+      setQ(
+        "availability",
+        "Other",
+      );
+
+      setCustomAvailability("");
+
+      return;
+    }
+
+    setQ(
+      "availability",
+      value,
+    );
+
+    setCustomAvailability("");
+  };
+
+  const handleCustomChange = (
+  e: ChangeEvent<HTMLInputElement>,
+) => {
+  const value = e.target.value;
+
+  // Keep typing in the temporary input only.
+  // It will be committed when Enter is pressed.
+  setCustomAvailability(value);
+};
+
+const handleCustomKeyDown = (
+  e: React.KeyboardEvent<HTMLInputElement>,
+) => {
+  if (e.key !== "Enter") {
+    return;
+  }
+
+  e.preventDefault();
+
+  const custom =
+    customAvailability.trim();
+
+  if (!custom) {
+    return;
+  }
+
+  setQ(
+    "availability",
+    custom,
+  );
+
+  e.currentTarget.blur();
+};
   return (
     <Field
       label="Availability"
@@ -615,26 +717,44 @@ function AvailabilityField({
         "availability",
       )}
     >
-      <Select
-        value={str(
-          qual,
-          "availability",
-        )}
-        onChange={(value) =>
-          setQ(
-            "availability",
-            value,
-          )
-        }
-        options={
-          AVAILABILITY_OPTIONS
-        }
-        placeholder="Select availability"
-      />
+      {showCustomInput ? (
+        <input
+          type="text"
+          value={
+            isOther
+              ? customAvailability
+              : availability
+          }
+          onChange={
+            handleCustomChange
+          }
+          onKeyDown={
+            handleCustomKeyDown
+          }
+          autoFocus={isOther}
+          placeholder="Enter your availability..."
+          className="field-base"
+        />
+      ) : (
+        <Select
+  value={availability}
+  onChange={
+    handleSelectChange
+  }
+  options={[
+    ...(isCustomAvailability
+      ? [availability]
+      : []),
+    ...AVAILABILITY_OPTIONS,
+    "Other",
+  ]}
+  placeholder="Search or select availability…"
+  hidePlaceholderOption={false}
+/>
+      )}
     </Field>
   );
 }
-
 /* =========================================================
    PARTNER 1 — FOOD TECHNOLOGIST / R&D / NPD
 ========================================================= */
@@ -643,6 +763,7 @@ function ExpertFields({
   qual,
   setQ,
   errors,
+  entity,
 }: {
   qual: Qual;
   setQ: (
@@ -650,35 +771,38 @@ function ExpertFields({
     value: string | string[],
   ) => void;
   errors: Errors;
+  entity: BasicDetails["entity"];
 }) {
-  return (
+    return (
     <>
-      <Field
-        label="Years of Experience"
-        required
-        error={errorFor(
-          errors,
+    
+      {entity === "independent" && (
+  <Field
+    label="Years of Experience"
+    required
+    error={errorFor(
+      errors,
+      "experience",
+    )}
+  >
+    <Select
+      value={str(
+        qual,
+        "experience",
+      )}
+      onChange={(value) =>
+        setQ(
           "experience",
-        )}
-      >
-        <Select
-          value={str(
-            qual,
-            "experience",
-          )}
-          onChange={(value) =>
-            setQ(
-              "experience",
-              value,
-            )
-          }
-          options={
-            EXPERIENCE_LEVELS
-          }
-          placeholder="Select experience"
-        />
-      </Field>
-
+          value,
+        )
+      }
+      options={
+        EXPERIENCE_LEVELS
+      }
+      placeholder="Select experience"
+    />
+  </Field>
+)}
       <Field
         label="Primary Expertise"
         required
@@ -703,6 +827,7 @@ function ExpertFields({
           }
           placeholder="Search or add expertise…"
           allowCustom
+          specialOther
         />
       </Field>
 
@@ -721,22 +846,24 @@ function ExpertFields({
         )}
       >
         <TagInput
-          options={
-            FOOD_TECH_FOOD_CATEGORIES
-          }
-          value={arr(
-            qual,
-            "foodCategories",
-          )}
-          onChange={(value) =>
-            setQ(
-              "foodCategories",
-              value,
-            )
-          }
-          placeholder="Search or add food categories…"
-          allowCustom
-        />
+  options={[
+    ...FOOD_TECH_FOOD_CATEGORIES,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "foodCategories",
+  )}
+  onChange={(value) =>
+    setQ(
+      "foodCategories",
+      value,
+    )
+  }
+  placeholder="Search or select food category…"
+  allowCustom={false}
+  specialOther
+/>
       </Field>
 
       <Field label="Have you independently developed or significantly contributed to a food formulation?">
@@ -798,6 +925,7 @@ function ConsultantFields({
   qual,
   setQ,
   errors,
+  entity,
 }: {
   qual: Qual;
   setQ: (
@@ -805,35 +933,38 @@ function ConsultantFields({
     value: string | string[],
   ) => void;
   errors: Errors;
+  entity: BasicDetails["entity"];
 }) {
+  
   return (
     <>
-      <Field
-        label="Years of Experience"
-        required
-        error={errorFor(
-          errors,
+     {entity === "independent" && (
+  <Field
+    label="Years of Experience"
+    required
+    error={errorFor(
+      errors,
+      "experience",
+    )}
+  >
+    <Select
+      value={str(
+        qual,
+        "experience",
+      )}
+      onChange={(value) =>
+        setQ(
           "experience",
-        )}
-      >
-        <Select
-          value={str(
-            qual,
-            "experience",
-          )}
-          onChange={(value) =>
-            setQ(
-              "experience",
-              value,
-            )
-          }
-          options={
-            EXPERIENCE_LEVELS
-          }
-          placeholder="Select experience"
-        />
-      </Field>
-
+          value,
+        )
+      }
+      options={
+        EXPERIENCE_LEVELS
+      }
+      placeholder="Select experience"
+    />
+  </Field>
+)}
       <Field
         label="Primary Expertise"
         required
@@ -843,22 +974,22 @@ function ConsultantFields({
         )}
       >
         <TagInput
-          options={
-            FOOD_CONSULTANT_EXPERTISE
-          }
-          value={arr(
-            qual,
-            "expertise",
-          )}
-          onChange={(value) =>
-            setQ(
-              "expertise",
-              value,
-            )
-          }
-          placeholder="Search or add expertise…"
-          allowCustom
-        />
+  options={FOOD_CONSULTANT_EXPERTISE}
+  value={arr(
+    qual,
+    "expertise",
+  )}
+  onChange={(value) =>
+    setQ(
+      "expertise",
+      value,
+    )
+  }
+  placeholder="Search or select expertise…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new expertise"
+/>
       </Field>
 
       <AvailabilityField
@@ -901,9 +1032,86 @@ function MoqField({
   ) => void;
   errors: Errors;
 }) {
+  const moqUnit = str(
+    qual,
+    "moqUnit",
+  );
+
+  const [customUnitInput, setCustomUnitInput] =
+    useState("");
+
+  const isCustomUnit =
+    moqUnit === "Custom";
+
+  const standardUnits =
+    MOQ_UNITS.filter(
+      (unit) => unit !== "Custom",
+    );
+
+  const savedCustomUnit =
+    moqUnit &&
+    !standardUnits.includes(
+      moqUnit,
+    ) &&
+    moqUnit !== "Custom"
+      ? moqUnit
+      : "";
+
+  const handleUnitChange = (
+    value: string,
+  ) => {
+    if (value === "Custom") {
+      setCustomUnitInput("");
+      setQ(
+        "moqUnit",
+        "Custom",
+      );
+      return;
+    }
+
+    setCustomUnitInput("");
+
+    setQ(
+      "moqUnit",
+      value,
+    );
+  };
+
+  const handleCustomUnitKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key !== "Enter") {
+      return;
+    }
+
+    e.preventDefault();
+
+    const value =
+      customUnitInput.trim();
+
+    if (!value) {
+      return;
+    }
+
+    setQ(
+      "moqUnit",
+      value,
+    );
+
+    setCustomUnitInput("");
+  };
+
+  const unitOptions = [
+    ...standardUnits,
+    ...(savedCustomUnit
+      ? [savedCustomUnit]
+      : []),
+    "Custom",
+  ];
+
   return (
     <Field
-      label="MOQs"
+      label="MOQ"
       required
       error={errorFor(
         errors,
@@ -911,6 +1119,8 @@ function MoqField({
       )}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-2">
+        {/* MOQ VALUE */}
+
         <TextInput
           value={str(
             qual,
@@ -925,51 +1135,40 @@ function MoqField({
           }
         />
 
-        <Select
-          value={str(
-            qual,
-            "moqUnit",
-          )}
-          onChange={(value) =>
-            setQ(
-              "moqUnit",
-              value,
-            )
-          }
-          options={
-            MOQ_UNITS
-          }
-          placeholder="Unit"
-        />
-      </div>
+        {/* MOQ UNIT */}
 
-      {str(
-        qual,
-        "moqUnit",
-      ) === "Custom" && (
-        <div className="mt-2 step-fade">
-          <Select
-            value={str(
-              qual,
-              "moqCustom",
-            )}
-            onChange={(value) =>
-              setQ(
-                "moqCustom",
-                value,
+        {isCustomUnit ? (
+          <TextInput
+            value={
+              customUnitInput
+            }
+            placeholder="Type unit..."
+            autoFocus
+            onChange={(e) =>
+              setCustomUnitInput(
+                e.target.value,
               )
             }
-            options={
-              MOQ_CUSTOM_OPTIONS
+            onKeyDown={
+              handleCustomUnitKeyDown
             }
-            placeholder="Select"
           />
-        </div>
-      )}
+        ) : (
+          <Select
+            value={moqUnit}
+            onChange={
+              handleUnitChange
+            }
+            options={
+              unitOptions
+            }
+            placeholder="Unit"
+          />
+        )}
+      </div>
     </Field>
   );
 }
-
 /* =========================================================
    PARTNER 3 — CONTRACT MANUFACTURER
 ========================================================= */
@@ -1036,22 +1235,25 @@ function ManufacturerFields({
         )}
       >
         <TagInput
-          options={
-            MANUFACTURER_SERVICES
-          }
-          value={arr(
-            qual,
-            "services",
-          )}
-          onChange={(value) =>
-            setQ(
-              "services",
-              value,
-            )
-          }
-          placeholder="Search or add services…"
-          allowCustom
-        />
+  options={[
+    ...MANUFACTURER_SERVICES,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "services",
+  )}
+  onChange={(value) =>
+    setQ(
+      "services",
+      value,
+    )
+  }
+  placeholder="Search or select services…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new service"
+/>
       </Field>
 
       <MoqField
@@ -1091,22 +1293,25 @@ function ManufacturerFields({
         )}
       >
         <TagInput
-          options={
-            MANUFACTURER_CERTIFICATIONS
-          }
-          value={arr(
-            qual,
-            "certifications",
-          )}
-          onChange={(value) =>
-            setQ(
-              "certifications",
-              value,
-            )
-          }
-          placeholder="Search or add certifications…"
-          allowCustom
-        />
+  options={[
+    ...MANUFACTURER_CERTIFICATIONS,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "certifications",
+  )}
+  onChange={(value) =>
+    setQ(
+      "certifications",
+      value,
+    )
+  }
+  placeholder="Search or select certifications…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new certification"
+/>
       </Field>
 
       <Field label="Monthly Production Capacity">
@@ -1219,22 +1424,25 @@ function SupplierFields({
         )}
       >
         <TagInput
-          options={
-            INGREDIENT_CERTIFICATIONS
-          }
-          value={arr(
-            qual,
-            "certifications",
-          )}
-          onChange={(value) =>
-            setQ(
-              "certifications",
-              value,
-            )
-          }
-          placeholder="Search or add certifications…"
-          allowCustom
-        />
+  options={[
+    ...INGREDIENT_CERTIFICATIONS,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "certifications",
+  )}
+  onChange={(value) =>
+    setQ(
+      "certifications",
+      value,
+    )
+  }
+  placeholder="Search or select certifications…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new certification"
+/>
       </Field>
 
       <Field
@@ -1329,22 +1537,25 @@ function LabFields({
         )}
       >
         <TagInput
-          options={
-            TESTING_SERVICES
-          }
-          value={arr(
-            qual,
-            "testingServices",
-          )}
-          onChange={(value) =>
-            setQ(
-              "testingServices",
-              value,
-            )
-          }
-          placeholder="Search testing services…"
-          allowCustom={false}
-        />
+  options={[
+    ...TESTING_SERVICES,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "testingServices",
+  )}
+  onChange={(value) =>
+    setQ(
+      "testingServices",
+      value,
+    )
+  }
+  placeholder="Search or select testing services…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new testing service"
+/>
       </Field>
 
       <Field
@@ -1356,22 +1567,25 @@ function LabFields({
         )}
       >
         <TagInput
-          options={
-            LAB_ACCREDITATIONS
-          }
-          value={arr(
-            qual,
-            "accreditations",
-          )}
-          onChange={(value) =>
-            setQ(
-              "accreditations",
-              value,
-            )
-          }
-          placeholder="Search accreditations…"
-          allowCustom={false}
-        />
+  options={[
+    ...LAB_ACCREDITATIONS,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "accreditations",
+  )}
+  onChange={(value) =>
+    setQ(
+      "accreditations",
+      value,
+    )
+  }
+  placeholder="Search or select accreditations…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new accreditation"
+/>
       </Field>
 
       <Field label="Typical Turnaround Time">
@@ -1495,22 +1709,25 @@ function PackagingFields({
         )}
       >
         <TagInput
-          options={
-            PACKAGING_TYPES
-          }
-          value={arr(
-            qual,
-            "packagingTypes",
-          )}
-          onChange={(value) =>
-            setQ(
-              "packagingTypes",
-              value,
-            )
-          }
-          placeholder="Search or add packaging types…"
-          allowCustom
-        />
+  options={[
+    ...PACKAGING_TYPES,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "packagingTypes",
+  )}
+  onChange={(value) =>
+    setQ(
+      "packagingTypes",
+      value,
+    )
+  }
+  placeholder="Search or select packaging types…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new packaging type"
+/>
       </Field>
 
       <Field
@@ -1522,22 +1739,25 @@ function PackagingFields({
         )}
       >
         <TagInput
-          options={
-            PACKAGING_MATERIALS
-          }
-          value={arr(
-            qual,
-            "packagingMaterials",
-          )}
-          onChange={(value) =>
-            setQ(
-              "packagingMaterials",
-              value,
-            )
-          }
-          placeholder="Search or add materials…"
-          allowCustom
-        />
+  options={[
+    ...PACKAGING_MATERIALS,
+    "Other",
+  ]}
+  value={arr(
+    qual,
+    "packagingMaterials",
+  )}
+  onChange={(value) =>
+    setQ(
+      "packagingMaterials",
+      value,
+    )
+  }
+  placeholder="Search or select materials…"
+  allowCustom={false}
+  specialOther
+  customPlaceholder="Add new material"
+/>
       </Field>
 
       <Field
@@ -1660,6 +1880,7 @@ function OtherFields({
   qual,
   setQ,
   errors,
+  entity,
 }: {
   qual: Qual;
   setQ: (
@@ -1667,9 +1888,38 @@ function OtherFields({
     value: string | string[],
   ) => void;
   errors: Errors;
+  entity: BasicDetails["entity"];
 }) {
   return (
     <>
+      {entity === "independent" && (
+        <Field
+          label="Years of Experience"
+          required
+          error={errorFor(
+            errors,
+            "experience",
+          )}
+        >
+          <Select
+            value={str(
+              qual,
+              "experience",
+            )}
+            onChange={(value) =>
+              setQ(
+                "experience",
+                value,
+              )
+            }
+            options={
+              EXPERIENCE_LEVELS
+            }
+            placeholder="Select experience"
+          />
+        </Field>
+      )}
+
       <Field
         label="What do you do?"
         required
@@ -1709,7 +1959,6 @@ function OtherFields({
     </>
   );
 }
-
 /* =========================================================
    VALIDATION
 ========================================================= */
@@ -1767,9 +2016,20 @@ export function validateBasics(
   }
 
   if (!data.phone.trim()) {
+  errors["phone"] =
+    "Phone number is required.";
+} else {
+  const phoneDigits =
+    data.phone.replace(/\D/g, "");
+
+  if (
+    phoneDigits.length < 7 ||
+    phoneDigits.length > 15
+  ) {
     errors["phone"] =
-      "Phone number is required.";
+      "Please enter a valid phone number.";
   }
+}
 
   if (!data.email.trim()) {
     errors["email"] =
@@ -1784,11 +2044,12 @@ export function validateBasics(
   }
 
   const linkedinRequired =
-    track !== "manufacturer" &&
-    track !== "supplier" &&
-    track !== "lab" &&
-    track !== "packaging";
-
+  (
+    track === "expert" ||
+    track === "consultant" ||
+    track === "other"
+  ) &&
+  data.entity === "independent";
   if (
     data.partnerType &&
     linkedinRequired &&
@@ -1817,14 +2078,15 @@ export function validateBasics(
     track === "consultant"
   ) {
     if (
-      !hasValue(
-        q,
-        "driveLink",
-      )
-    ) {
-      errors["driveLink"] =
-        "Drive link is required.";
-    }
+  data.entity === "independent" &&
+  !hasValue(
+    q,
+    "driveLink",
+  )
+) {
+  errors["driveLink"] =
+    "Portfolio / Website / CV is required.";
+}
 
     if (
       !hasValue(
@@ -1899,42 +2161,30 @@ export function validateBasics(
         "Please select at least one service.";
     }
 
-    if (
-      !hasValue(
-        q,
-        "moq",
-      )
-    ) {
-      errors["moq"] =
-        "MOQ is required.";
-    } else if (
-      !hasValue(
-        q,
-        "moqUnit",
-      )
-    ) {
-      errors["moq"] =
-        "Please select the MOQ unit.";
-    } else if (
-      str(
-        q,
-        "moqUnit",
-      ) === "Custom" &&
-      !hasValue(
-        q,
-        "moqCustom",
-      )
-    ) {
-      errors["moq"] =
-        "Please select the MOQ option.";
-    }
+   if (
+  !hasValue(
+    q,
+    "moq",
+  )
+) {
+  errors["moq"] =
+    "MOQ is required.";
+} else if (
+  !hasValue(
+    q,
+    "moqUnit",
+  )
+) {
+  errors["moq"] =
+    "Please select the MOQ unit.";
+}
 
-    if (
-      !hasValue(
-        q,
-        "pilot",
-      )
-    ) {
+if (
+  !hasValue(
+    q,
+    "pilot",
+  )
+) {
       errors["pilot"] =
         "Please select an option.";
     }
@@ -1954,9 +2204,7 @@ export function validateBasics(
      PARTNER 4 — SUPPLIER
   ======================================================= */
 
-  if (
-    track === "supplier"
-  ) {
+  if (track === "supplier") {
     if (
       !hasValues(
         q,
@@ -1983,20 +2231,7 @@ export function validateBasics(
     ) {
       errors["moq"] =
         "Please select the MOQ unit.";
-    } else if (
-      str(
-        q,
-        "moqUnit",
-      ) === "Custom" &&
-      !hasValue(
-        q,
-        "moqCustom",
-      )
-    ) {
-      errors["moq"] =
-        "Please select the MOQ option.";
     }
-
     if (
       !hasValues(
         q,
@@ -2129,18 +2364,6 @@ export function validateBasics(
     ) {
       errors["moq"] =
         "Please select the MOQ unit.";
-    } else if (
-      str(
-        q,
-        "moqUnit",
-      ) === "Custom" &&
-      !hasValue(
-        q,
-        "moqCustom",
-      )
-    ) {
-      errors["moq"] =
-        "Please select the MOQ option.";
     }
 
     if (
@@ -2169,15 +2392,16 @@ export function validateBasics(
   ======================================================= */
 
   if (
-    track === "other" &&
-    !hasValue(
-      q,
-      "whatDoYouDo",
-    )
-  ) {
-    errors["whatDoYouDo"] =
-      "Please tell us what you do.";
-  }
+  data.partnerType &&
+  track === "other" &&
+  !hasValue(
+    q,
+    "whatDoYouDo",
+  )
+) {
+  errors["whatDoYouDo"] =
+    "Please tell us what you do.";
+}
+return errors;
 
-  return errors;
 }
